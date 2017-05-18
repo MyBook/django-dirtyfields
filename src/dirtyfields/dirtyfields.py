@@ -4,6 +4,7 @@ from copy import deepcopy
 from django.core.exceptions import ValidationError
 from django.db.models.expressions import BaseExpression
 from django.db.models.expressions import Combinable
+from django.db.models.query_utils import DeferredAttribute
 from django.db.models.signals import post_save, m2m_changed
 
 from .compare import raw_compare, compare_states
@@ -127,8 +128,12 @@ def reset_state(sender, instance, **kwargs):
     update_fields = kwargs.pop('update_fields', {})
     new_state = instance._as_dict(check_relationship=True)
     if update_fields:
-        for field in update_fields:
-            instance._original_state[field] = new_state[field]
+        for field_name in update_fields:
+            field = sender._meta.get_field(field_name)
+            if field.get_attname() in instance.get_deferred_fields():
+                continue
+
+            instance._original_state[field.name] = new_state[field.name]
     else:
         instance._original_state = new_state
     if instance.ENABLE_M2M_CHECK:

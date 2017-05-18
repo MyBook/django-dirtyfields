@@ -117,3 +117,17 @@ if is_postgresql_env_with_json_field():
 
     class TestModelWithJSONField(DirtyFieldsMixin, models.Model):
         json_field = JSONField()
+
+
+class TestDeferedModelManager(models.Manager):
+    use_for_related_fields = True
+
+    def get_queryset(self):
+        return super(TestDeferedModelManager, self).get_queryset().defer(
+            'boolean',
+        )
+
+class TestDeferedModel(DirtyFieldsMixin, models.Model):
+    boolean = models.BooleanField(default=True)
+
+    objects = TestDeferedModelManager()
